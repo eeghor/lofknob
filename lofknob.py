@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.stats import nct
+from collections import namedtuple
 from sklearn.neighbors import LocalOutlierFactor
 
 def lofknob(X, c_grid=None, k_grid=None):
@@ -11,8 +12,10 @@ def lofknob(X, c_grid=None, k_grid=None):
     
     n = X.shape[0]  # number of rows
     
+    Cand = namedtuple('Cand', 'c k_c_opt p_c')
     candidates = []
-    very_small = 1e-8
+
+    VERY_SMALL = 1e-8
     
     for c in c_grid:
         
@@ -20,6 +23,9 @@ def lofknob(X, c_grid=None, k_grid=None):
         # floor(c*n=0.12*98=11.76)=11 rows will be ouliers
     
         cn = np.floor(c*n).astype(int)  # np.floor() returns a float
+
+        if cn < 2:
+            continue
     
         m_c_out = v_c_out = m_c_in = v_c_in = 0
         
@@ -53,12 +59,12 @@ def lofknob(X, c_grid=None, k_grid=None):
             v_c_k_in = np.var(in_ln_lofs)
             v_c_in += v_c_k_in/k_grid_len
             
-            t_c_k = (m_c_k_out - m_c_k_in)/np.sqrt((v_c_k_out + v_c_k_in)/cn) if (m_c_k_out - m_c_k_in)*(v_c_k_out + v_c_k_in) > very_small else 0
+            t_c_k = (m_c_k_out - m_c_k_in)/np.sqrt((v_c_k_out + v_c_k_in)/cn) if (m_c_k_out - m_c_k_in)*(v_c_k_out + v_c_k_in) > VERY_SMALL else 0
             
             t_c = np.append(t_c, t_c_k)
             
         # non-centrality parameter
-        ncp_c = (v_c_out + v_c_in)/np.sqrt((v_c_out + v_c_in)/cn) if (v_c_out + v_c_in)*(v_c_out + v_c_in) > very_small else 0
+        ncp_c = (v_c_out + v_c_in)/np.sqrt((v_c_out + v_c_in)/cn) if (v_c_out + v_c_in)*(v_c_out + v_c_in) > VERY_SMALL else 0
     
         # degrees of freedom
         df_c = 2*cn - 2
@@ -69,10 +75,10 @@ def lofknob(X, c_grid=None, k_grid=None):
     
         p_c = nct.cdf(x=t_c_k_opt, df=df_c, nc=ncp_c, loc=0, scale=1)
     
-        candidates.append((c, k_c_opt, p_c))
+        candidates.append(Cand(c=c, k_c_opt=k_c_opt, p_c=p_c))
     
     # find optimal c_opt, it's the one corresponding to the largest p_c
-    c_opt, k_opt, _ = max(candidates, key=lambda x: x[2])
+    c_opt, k_opt, _ = max(candidates, key=lambda x: x.p_c)
 
     return (c_opt, k_opt)
         
