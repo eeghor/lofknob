@@ -12,6 +12,12 @@ def lofknob(X, c_grid: Iterable = None, k_grid: Iterable = None) -> Tuple[float,
     if not k_grid:
         k_grid = np.arange(10, 50, step=2)
 
+    if (np.min(c_grid) < 0) or (np.max(c_grid) > 0.50):
+        raise Exception(f"ERROR: contamination must be in [0.00, 0.50]!")
+
+    if np.min(k_grid) < 1:
+        raise Exception(f"ERROR: number of neighbors must be at least 1!")
+
     n = X.shape[0]  # number of rows
 
     Cand = namedtuple("Cand", "c k_c_opt p_c")
