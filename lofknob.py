@@ -1,11 +1,16 @@
 import numpy as np
+import numpy.typing as npt
 from scipy.stats import nct
 from collections import namedtuple
 from sklearn.neighbors import LocalOutlierFactor
 from typing import Tuple, Iterable
 
 
-def lofknob(X, c_grid: Iterable = None, k_grid: Iterable = None) -> Tuple[float, int]:
+def lofknob(
+    X: npt.NDArray[float],
+    c_grid: Iterable[float] = None,
+    k_grid: Iterable[int] = None,
+) -> Tuple[float, int]:
 
     if not c_grid:
         c_grid = np.linspace(0.01, 0.15, num=10)
