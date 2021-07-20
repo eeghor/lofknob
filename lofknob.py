@@ -32,7 +32,8 @@ def lofknob(
 
         c = c_grid[i]
 
-        # with contamination c, floor(c*n_rows) rows will be labelled as outliers; e.g. if n_rows=98 and c=0.12 then
+        # with contamination c, floor(c*n_rows) rows to be labelled as outliers
+        # e.g. if n_rows=98 and c=0.12 then
         # floor(c*n_rows=0.12*98=11.76)=11 rows will be ouliers
 
         cn = np.floor(c * n_rows).astype(int)  # np.floor() returns a float
@@ -51,20 +52,20 @@ def lofknob(
 
         for k in k_grid:
 
-            # fit LOF with c and k and return labels: -1 if outlier and 1 otherwise
+            # fit LOF with c and k, return -1 if outlier and 1 otherwise
             lof = LocalOutlierFactor(contamination=c, n_neighbors=k)
             labels = lof.fit_predict(X)
 
-            # negative_outlier_factor_ = -[LOF score]; [LOF score] for outliers is much larger than 1 and for
-            # inliers it's close to 1;
-            # see https://towardsdatascience.com/local-outlier-factor-for-anomaly-detection-cc0c770d2ebe
+            # negative_outlier_factor_ = -[LOF score]; [LOF score] for
+            # outliers >> 1 and for inliers it's close to 1;
             # we calculate natural logarithms of LOF scores here
             lls = np.log(-lof.negative_outlier_factor_)
 
             # select natural logarithms of LOF scores for outliers
             out_lls = lls[labels == OUTLIER_LABEL]
-            # ..and for inliers but these will be sorted from smallest to largest; then
-            # we pick the last cn of them - after the sorting these will be the largest cn LOF scores
+            # ..and for inliers but these will be sorted smallest to largest;
+            # then we pick the last cn of them since after the sorting
+            # these will be the largest cn LOF scores
             inl_lls = np.sort(lls[labels == INLIER_LABEL])[-cn:]
 
             # calculate mean and variance of lls for outliers
@@ -79,28 +80,23 @@ def lofknob(
             in_var_lls_this_k = np.var(inl_lls).tolist()
             in_var_lls_all_ks.append(in_var_lls_this_k)
 
-            diff_means_this_k = out_mean_lls_this_k - in_mean_lls_this_k
-            sum_vars_this_k = out_var_lls_this_k + in_var_lls_this_k
-
             # measure distance between outliers and the nearest cn inliers
-            if (diff_means_this_k > VERY_SMALL) and (sum_vars_this_k > VERY_SMALL):
+            if ((diff_means_this_k := out_mean_lls_this_k - in_mean_lls_this_k > VERY_SMALL) and 
+                    (sum_vars_this_k := out_var_lls_this_k + in_var_lls_this_k> VERY_SMALL)):
                 dist_score_this_k = diff_means_this_k / np.sqrt(sum_vars_this_k / cn)
             else:
                 dist_score_this_k = 0
 
             dist_scores_all_k.append(dist_score_this_k)
 
-        # so we've gone through all ks for this c
-        # now calculate the non-centrality parameter
-        diff_mean_means_over_ks = np.mean(out_mean_lls_all_ks) - np.mean(in_mean_lls_all_ks)
-        sum_mean_vars_over_ks = np.mean(out_var_lls_all_ks) + np.mean(in_var_lls_all_ks)
-
-        if (diff_mean_means_over_ks > VERY_SMALL) and (sum_mean_vars_over_ks > VERY_SMALL):
+        if ((diff_mean_means_over_ks := np.mean(out_mean_lls_all_ks) - np.mean(in_mean_lls_all_ks) > VERY_SMALL) and 
+                (sum_mean_vars_over_ks := np.mean(out_var_lls_all_ks) + np.mean(in_var_lls_all_ks) > VERY_SMALL)):
             ncp_c = diff_mean_means_over_ks / np.sqrt(sum_mean_vars_over_ks / cn)
         else:
             ncp_c = 0
 
-        # now we want to find out which choice of k resulted in the largest distance score
+        # now we want to find out which choice of k resulted in
+        # the largest distance score;
         # first we find index where the largest (optimal) score is sitting
         idx_opt_dist_score = np.argmax(dist_scores_all_k).tolist()
         # ..then we pick the value of the largest score..
