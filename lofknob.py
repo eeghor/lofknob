@@ -1,10 +1,10 @@
 from collections import namedtuple
 from typing import List, Tuple, Optional
 
-import numpy as np
-import pandas as pd
-from scipy.stats import nct
-from sklearn.neighbors import LocalOutlierFactor
+import numpy as np    # type: ignore
+import pandas as pd    # type: ignore
+from scipy.stats import nct    # type: ignore
+from sklearn.neighbors import LocalOutlierFactor    # type: ignore
 
 
 def lofknob(
@@ -44,9 +44,7 @@ def lofknob(
     Cand = namedtuple("Cand", "c k_c_opt p_c")
     candidates = []
 
-    for i in range(len(c_grid)):
-
-        c = c_grid[i]
+    for c in c_grid:
 
         # with contamination c, cn=floor(c*n_rows) rows to be labelled outliers
         # e.g. if n_rows=98 and c=0.12 then
