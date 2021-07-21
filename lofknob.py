@@ -1,44 +1,60 @@
+from collections import namedtuple
+from typing import List, Tuple, Optional
+
 import numpy as np
 import pandas as pd
 from scipy.stats import nct
-from collections import namedtuple
 from sklearn.neighbors import LocalOutlierFactor
-from typing import List, Tuple
 
 
 def lofknob(
     X: pd.DataFrame,
-    c_grid: List[float],
-    k_grid: List[int],
+    c_grid: Optional[List[float]] = None,
+    k_grid: Optional[List[int]] = None,
 ) -> Tuple[float, int]:
 
-    if (np.min(c_grid) < 0) or (np.max(c_grid) > 0.50):
-        raise Exception("ERROR: contamination must be in [0.00, 0.50]!")
+    # scikit-learn restricts contamination to range [0, 0.50]
+    MAX_CONTAMINATION = 0.50
+    # minimum number of expected outlier rows
+    MIN_OUTLIER_ROWS = 2
+    # scikit-learn uses 20 neighbours by default
+    MIN_NEIGHBORS = 5
+    # very small number to use instead of zero
+    VERY_SMALL = 1e-8
+    # scikit-learn outlier labels
+    OUTLIER_LABEL = -1
+    INLIER_LABEL = 1
 
-    if np.min(k_grid) < 1:
-        raise Exception("ERROR: number of neighbors must be at least 1!")
+    if c_grid is None:
+        c_grid = np.arange(
+            start=0.01, stop=MAX_CONTAMINATION + 0.01, step=0.01
+        ).tolist()
+
+    if (np.min(c_grid) < 0) or (np.max(c_grid) > MAX_CONTAMINATION):
+        raise Exception(f"contamination must be in [0.00, {MAX_CONTAMINATION}]!")
+
+    if k_grid is None:
+        k_grid = np.arange(start=MIN_NEIGHBORS, stop=46, step=2).tolist()
+
+    if np.min(k_grid) < MIN_NEIGHBORS:
+        raise Exception(f"number of neighbors must be at least {MIN_NEIGHBORS}!")
 
     n_rows = len(X.index)
 
     Cand = namedtuple("Cand", "c k_c_opt p_c")
     candidates = []
 
-    VERY_SMALL = 1e-8
-
-    OUTLIER_LABEL = -1
-    INLIER_LABEL = 1
-
     for i in range(len(c_grid)):
 
         c = c_grid[i]
 
-        # with contamination c, floor(c*n_rows) rows to be labelled as outliers
+        # with contamination c, cn=floor(c*n_rows) rows to be labelled outliers
         # e.g. if n_rows=98 and c=0.12 then
-        # floor(c*n_rows=0.12*98=11.76)=11 rows will be ouliers
+        # cn=floor(c*n_rows=0.12*98=11.76)=11
 
         cn = np.floor(c * n_rows).astype(int)  # np.floor() returns a float
 
-        if cn < 2:
+        if cn < MIN_OUTLIER_ROWS:
             continue
 
         out_mean_lls_all_ks = []
@@ -81,16 +97,27 @@ def lofknob(
             in_var_lls_all_ks.append(in_var_lls_this_k)
 
             # measure distance between outliers and the nearest cn inliers
-            if ((diff_means_this_k := out_mean_lls_this_k - in_mean_lls_this_k > VERY_SMALL) and 
-                    (sum_vars_this_k := out_var_lls_this_k + in_var_lls_this_k> VERY_SMALL)):
+            if (
+                diff_means_this_k := out_mean_lls_this_k - in_mean_lls_this_k
+                > VERY_SMALL
+            ) and (
+                sum_vars_this_k := out_var_lls_this_k + in_var_lls_this_k > VERY_SMALL
+            ):
                 dist_score_this_k = diff_means_this_k / np.sqrt(sum_vars_this_k / cn)
             else:
                 dist_score_this_k = 0
 
             dist_scores_all_k.append(dist_score_this_k)
 
-        if ((diff_mean_means_over_ks := np.mean(out_mean_lls_all_ks) - np.mean(in_mean_lls_all_ks) > VERY_SMALL) and 
-                (sum_mean_vars_over_ks := np.mean(out_var_lls_all_ks) + np.mean(in_var_lls_all_ks) > VERY_SMALL)):
+        if (
+            diff_mean_means_over_ks := np.mean(out_mean_lls_all_ks)
+            - np.mean(in_mean_lls_all_ks)
+            > VERY_SMALL
+        ) and (
+            sum_mean_vars_over_ks := np.mean(out_var_lls_all_ks)
+            + np.mean(in_var_lls_all_ks)
+            > VERY_SMALL
+        ):
             ncp_c = diff_mean_means_over_ks / np.sqrt(sum_mean_vars_over_ks / cn)
         else:
             ncp_c = 0

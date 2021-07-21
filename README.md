@@ -4,3 +4,5 @@ Implementation of an algorithm described in [this](https://arxiv.org/abs/1902.00
 
 * **n_neighbors** and
 * **contamination**
+
+The algorithm is trying to find a parameter combination that gives most clear-cut outliers.
