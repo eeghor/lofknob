@@ -29,24 +29,26 @@ class lofknob:
         X: pd.DataFrame,
         c_grid: Optional[List[float]] = None,
         k_grid: Optional[List[int]] = None,
-    ) -> Tuple[float, int]:
+    ) -> Optional[Tuple[float, int]]:
 
         if c_grid is None:
             c_grid = np.arange(
                 start=0.01, stop=lofknob.MAX_CONTAMINATION + 0.01, step=0.01
             ).tolist()
 
-        if (np.min(c_grid) < 0) or (np.max(c_grid) > lofknob.MAX_CONTAMINATION):
+        if ((c_min := np.min(c_grid)) < 0) or (
+            (c_max := np.max(c_grid)) > lofknob.MAX_CONTAMINATION
+        ):
             raise Exception(
-                f"contamination must be in [0.00, {lofknob.MAX_CONTAMINATION}]!"
+                f"contamination in [{c_min}, {c_max}] while it must be in [0.00, {lofknob.MAX_CONTAMINATION}]!"
             )
 
         if k_grid is None:
             k_grid = np.arange(start=lofknob.MIN_NEIGHBORS, stop=46, step=2).tolist()
 
-        if np.min(k_grid) < lofknob.MIN_NEIGHBORS:
+        if (k_min := np.min(k_grid)) < lofknob.MIN_NEIGHBORS:
             raise Exception(
-                f"number of neighbors must be at least {lofknob.MIN_NEIGHBORS}!"
+                f"number of neighbors is {k_min} while it must be at least {lofknob.MIN_NEIGHBORS}!"
             )
 
         n_rows = len(X.index)
@@ -151,6 +153,8 @@ class lofknob:
 
         # now that we've gone through all combinations of c and k,
         # find optimal c_opt - it's the one corresponding to the largest p_c
-        c_opt, k_opt, _ = max(candidates, key=lambda x: x.p_c)
-
-        return (c_opt, k_opt)
+        if candidates:
+            return max(candidates, key=lambda x: x.p_c)[:2]
+        else:
+            print("tuning failed, try different grids!")
+            return None
