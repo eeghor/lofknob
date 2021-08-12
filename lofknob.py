@@ -1,5 +1,6 @@
 from collections import namedtuple
 from typing import List, Tuple, Optional
+from operator import attrgetter
 
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
@@ -9,8 +10,9 @@ from sklearn.neighbors import LocalOutlierFactor  # type: ignore
 
 class lofknob:
 
-    # scikit-learn restricts contamination to range [0, 0.50]
-    MAX_CONTAMINATION = 0.50
+    # scikit-learn restricts contamination to range (0, 0.5]
+    MIN_CONTAMINATION = 0.001
+    MAX_CONTAMINATION = 0.500
     # minimum number of expected outlier rows
     MIN_OUTLIER_ROWS = 2
     # scikit-learn uses 20 neighbours by default
@@ -32,19 +34,19 @@ class lofknob:
     ) -> Optional[Tuple[float, int]]:
 
         if c_grid is None:
-            c_grid = np.arange(
-                start=0.01, stop=lofknob.MAX_CONTAMINATION + 0.01, step=0.01
+            c_grid = np.linspace(
+                start=lofknob.MIN_CONTAMINATION, stop=lofknob.MAX_CONTAMINATION, num=20
             ).tolist()
 
-        if ((c_min := np.min(c_grid)) < 0) or (
+        if ((c_min := np.min(c_grid)) < lofknob.MIN_CONTAMINATION) or (
             (c_max := np.max(c_grid)) > lofknob.MAX_CONTAMINATION
         ):
             raise Exception(
-                f"contamination in [{c_min}, {c_max}] while it must be in [0.00, {lofknob.MAX_CONTAMINATION}]!"
+                f"contamination in [{c_min}, {c_max}] while it must be in [{lofknob.MIN_CONTAMINATION}, {lofknob.MAX_CONTAMINATION}]!"
             )
 
         if k_grid is None:
-            k_grid = np.arange(start=lofknob.MIN_NEIGHBORS, stop=46, step=2).tolist()
+            k_grid = np.arange(start=lofknob.MIN_NEIGHBORS, stop=52, step=2).tolist()
 
         if (k_min := np.min(k_grid)) < lofknob.MIN_NEIGHBORS:
             raise Exception(
@@ -65,6 +67,9 @@ class lofknob:
             cn = np.floor(c * n_rows).astype(int)  # np.floor() returns a float
 
             if cn < lofknob.MIN_OUTLIER_ROWS:
+                print(
+                    f"contamination {c:.5f} results in {cn:,} outliers (required minimum is {lofknob.MIN_OUTLIER_ROWS})"
+                )
                 continue
 
             out_mean_lls_all_ks = []
@@ -154,7 +159,7 @@ class lofknob:
         # now that we've gone through all combinations of c and k,
         # find optimal c_opt - it's the one corresponding to the largest p_c
         if candidates:
-            return max(candidates, key=lambda x: x.p_c)[:2]
+            return attrgetter("c", "k_c_opt")(max(candidates, key=lambda x: x.p_c))
         else:
             print("tuning failed, try different grids!")
             return None
