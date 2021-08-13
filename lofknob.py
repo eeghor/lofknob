@@ -1,5 +1,5 @@
 from collections import namedtuple
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, NamedTuple
 from operator import attrgetter
 
 import numpy as np  # type: ignore
@@ -23,8 +23,10 @@ class lofknob:
     OUTLIER_LABEL = -1
     INLIER_LABEL = 1
 
-    def __init__(self):
-        pass
+    class Candidate(NamedTuple):
+        c: float
+        k_c_opt: float
+        p_c: float
 
     def tune(
         self,
@@ -55,7 +57,6 @@ class lofknob:
 
         n_rows = len(X.index)
 
-        Cand = namedtuple("Cand", "c k_c_opt p_c")
         candidates = []
 
         for c in c_grid:
@@ -94,6 +95,10 @@ class lofknob:
 
                 # select natural logarithms of LOF scores for outliers
                 out_lls = lls[labels == lofknob.OUTLIER_LABEL]
+                # what if no outliers have been predicted?
+                if out_lls.size == 0:
+                    continue
+
                 # ..and for inliers but these will be sorted smallest to largest;
                 # then we pick the last cn of them since after the sorting
                 # these will be the largest cn LOF scores
@@ -154,7 +159,7 @@ class lofknob:
 
             p_c = nct.cdf(x=opt_dist_score, df=df_this_c, nc=ncp_c, loc=0, scale=1)
 
-            candidates.append(Cand(c=c, k_c_opt=k_opt_this_c, p_c=p_c))
+            candidates.append(lofknob.Candidate(c=c, k_c_opt=k_opt_this_c, p_c=p_c))
 
         # now that we've gone through all combinations of c and k,
         # find optimal c_opt - it's the one corresponding to the largest p_c
