@@ -10,6 +10,26 @@ from sklearn.neighbors import LocalOutlierFactor  # type: ignore
 
 class lofknob:
 
+    """
+    Hyperparameter Tuning for the Local Outlier Factor Algorithm
+    (see the original paper at https://arxiv.org/pdf/1902.00567.pdf)
+
+    usage example
+    -------------
+
+    optimal_contamination, optimal_number_of_neighbours = lofknob().tune(X, c_grid, k_grid)
+
+    where
+
+    X:
+        is a pandas DataFrame with training data
+    c_grid:
+        is a list of contamination values to try, e.g. [0.01, 0.02, ..]
+    k_grid:
+        is a list of the number of neighbours to try, e.g. [5, 10, 20, ..]
+
+    """
+
     # scikit-learn restricts contamination to range (0, 0.5]
     MIN_CONTAMINATION = 0.001
     MAX_CONTAMINATION = 0.500
@@ -24,9 +44,9 @@ class lofknob:
     INLIER_LABEL = 1
 
     class Candidate(NamedTuple):
-        c: float
-        k_c_opt: float
-        p_c: float
+        contamination: float
+        number_of_neighbours: float
+        probability_score: float
 
     def tune(
         self,
@@ -159,12 +179,20 @@ class lofknob:
 
             p_c = nct.cdf(x=opt_dist_score, df=df_this_c, nc=ncp_c, loc=0, scale=1)
 
-            candidates.append(lofknob.Candidate(c=c, k_c_opt=k_opt_this_c, p_c=p_c))
+            candidates.append(
+                lofknob.Candidate(
+                    contamination=c,
+                    number_of_neighbours=k_opt_this_c,
+                    probability_score=p_c,
+                )
+            )
 
         # now that we've gone through all combinations of c and k,
-        # find optimal c_opt - it's the one corresponding to the largest p_c
+        # find optimal c_opt - it's the one corresponding to the largest probability_score
         if candidates:
-            return attrgetter("c", "k_c_opt")(max(candidates, key=lambda x: x.p_c))
+            return attrgetter("contamination", "number_of_neighbours")(
+                max(candidates, key=lambda x: x.probability_score)
+            )
         else:
             print("tuning failed, try different grids!")
             return None
