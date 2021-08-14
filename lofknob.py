@@ -1,4 +1,3 @@
-from collections import namedtuple
 from typing import List, Tuple, Optional, NamedTuple
 from operator import attrgetter
 
@@ -68,7 +67,7 @@ class lofknob:
             )
 
         if k_grid is None:
-            k_grid = np.arange(start=lofknob.MIN_NEIGHBORS, stop=52, step=2).tolist()
+            k_grid = np.arange(start=lofknob.MIN_NEIGHBORS, stop=(10 +1)*lofknob.MIN_NEIGHBORS, step=lofknob.MIN_NEIGHBORS).tolist()
 
         if (k_min := np.min(k_grid)) < lofknob.MIN_NEIGHBORS:
             raise Exception(
@@ -190,7 +189,7 @@ class lofknob:
         # now that we've gone through all combinations of c and k,
         # find optimal c_opt - it's the one corresponding to the largest probability_score
         if candidates:
-            return attrgetter("contamination", "number_of_neighbours")(
+            return attrgetter("contamination", "number_of_neighbours")(  # type: ignore
                 max(candidates, key=lambda x: x.probability_score)
             )
         else:
