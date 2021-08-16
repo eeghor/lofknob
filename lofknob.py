@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional, NamedTuple
+from typing import List, Tuple, Optional, NamedTuple, Union
 from operator import attrgetter
 
 import numpy as np  # type: ignore
@@ -41,6 +41,8 @@ class lofknob:
     # scikit-learn outlier labels
     OUTLIER_LABEL = -1
     INLIER_LABEL = 1
+    # how many decimal digits to round to in output
+    USEFUL_DIGITS = 4
 
     class Candidate(NamedTuple):
         contamination: float
@@ -52,7 +54,8 @@ class lofknob:
         X: pd.DataFrame,
         c_grid: Optional[List[float]] = None,
         k_grid: Optional[List[int]] = None,
-    ) -> Optional[Tuple[float, int]]:
+        return_scores: bool = False,
+    ) -> Union[Tuple[float, int], List[Candidate], None]:
 
         if c_grid is None:
             c_grid = np.linspace(
@@ -67,7 +70,11 @@ class lofknob:
             )
 
         if k_grid is None:
-            k_grid = np.arange(start=lofknob.MIN_NEIGHBORS, stop=(10 +1)*lofknob.MIN_NEIGHBORS, step=lofknob.MIN_NEIGHBORS).tolist()
+            k_grid = np.arange(
+                start=lofknob.MIN_NEIGHBORS,
+                stop=(10 + 1) * lofknob.MIN_NEIGHBORS,
+                step=lofknob.MIN_NEIGHBORS,
+            ).tolist()
 
         if (k_min := np.min(k_grid)) < lofknob.MIN_NEIGHBORS:
             raise Exception(
@@ -180,18 +187,23 @@ class lofknob:
 
             candidates.append(
                 lofknob.Candidate(
-                    contamination=c,
+                    contamination=round(c, lofknob.USEFUL_DIGITS),
                     number_of_neighbours=k_opt_this_c,
-                    probability_score=p_c,
+                    probability_score=round(p_c, lofknob.USEFUL_DIGITS),
                 )
             )
 
         # now that we've gone through all combinations of c and k,
-        # find optimal c_opt - it's the one corresponding to the largest probability_score
+        # find optimal c - it's the one corresponding to the largest probability_score
         if candidates:
-            return attrgetter("contamination", "number_of_neighbours")(  # type: ignore
-                max(candidates, key=lambda x: x.probability_score)
-            )
+            if return_scores:
+                return sorted(
+                    candidates, key=lambda x: x.probability_score, reverse=True
+                )
+            else:
+                return attrgetter("contamination", "number_of_neighbours")(  # type: ignore
+                    max(candidates, key=lambda x: x.probability_score)
+                )
         else:
             print("tuning failed, try different grids!")
             return None
