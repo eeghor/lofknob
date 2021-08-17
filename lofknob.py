@@ -1,5 +1,6 @@
 from typing import List, Tuple, Optional, NamedTuple, Union
 from operator import attrgetter
+import heapq
 
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
@@ -26,7 +27,9 @@ class lofknob:
         is a list of contamination values to try, e.g. [0.01, 0.02, ..]
     k_grid:
         is a list of the number of neighbours to try, e.g. [5, 10, 20, ..]
-
+    return_scores:
+        if True, return a list of parameter pairs competing for being "optimal" along
+        with their probability scores; default: False
     """
 
     # scikit-learn restricts contamination to range (0, 0.5]
@@ -128,7 +131,7 @@ class lofknob:
                 # ..and for inliers but these will be sorted smallest to largest;
                 # then we pick the last cn of them since after the sorting
                 # these will be the largest cn LOF scores
-                inl_lls = np.sort(lls[labels == lofknob.INLIER_LABEL])[-cn:]
+                inl_lls = heapq.nlargest(cn, lls[labels == lofknob.INLIER_LABEL])
 
                 # calculate mean and variance of lls for outliers
                 out_mean_lls_this_k = np.mean(out_lls).tolist()
