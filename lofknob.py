@@ -107,9 +107,8 @@ class lofknob:
             in_mean_lls_all_ks = []
             in_var_lls_all_ks = []
 
+            # well store pairs (k, score) here
             dist_scores_all_k = []
-
-            k_grid_len = len(k_grid)
 
             for k in k_grid:
 
@@ -159,7 +158,7 @@ class lofknob:
                 else:
                     dist_score_this_k = 0
 
-                dist_scores_all_k.append(dist_score_this_k)
+                dist_scores_all_k.append((k, dist_score_this_k))
 
             if (
                 diff_mean_means_over_ks := np.mean(out_mean_lls_all_ks)
@@ -175,13 +174,8 @@ class lofknob:
                 ncp_c = 0
 
             # now we want to find out which choice of k resulted in
-            # the largest distance score;
-            # first we find index where the largest (optimal) score is sitting
-            idx_opt_dist_score = np.argmax(dist_scores_all_k).tolist()
-            # ..then we pick the value of the largest score..
-            opt_dist_score = dist_scores_all_k[idx_opt_dist_score]
-            # ..and finally pick the value of k corresponding to this score
-            k_opt_this_c = k_grid[idx_opt_dist_score]
+            # the largest distance score (and what that score was)
+            k_opt_this_c, opt_dist_score = max(dist_scores_all_k, key=lambda x: x[1])
 
             # degrees of freedom
             df_this_c = 2 * cn - 2
