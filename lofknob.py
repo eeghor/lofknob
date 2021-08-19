@@ -17,26 +17,27 @@ class lofknob:
     usage example
     -------------
 
-    optimal_contamination, optimal_number_of_neighbours = lofknob().tune(X, c_grid, k_grid, return_scores)
+    optimal_contamination, optimal_number_of_neighbours = lofknob().tune(X, c_grid, k_grid, return_scores, min_outlier_rows)
 
     where
 
     X:
-            is a pandas DataFrame with training data
+                    is a pandas DataFrame with training data
     c_grid:
-            is a list of contamination values to try, e.g. [0.01, 0.02, ..]
+                    is a list of contamination values to try, e.g. [0.01, 0.02, ..]
     k_grid:
-            is a list of the number of neighbours to try, e.g. [5, 10, 20, ..]
+                    is a list of the number of neighbours to try, e.g. [5, 10, 20, ..]
     return_scores:
-            if True, return a list of parameter pairs competing for being "optimal" along
-            with their probability scores; default: False
+                    if True, return a list of parameter pairs competing for being "optimal" along
+                    with their probability scores; default: False
+    min_outlier_rows:
+                    minimum number of expected outlier rows for any selected contamination;
+                    default: 2
     """
 
     # scikit-learn restricts contamination to range (0, 0.5]
     MIN_CONTAMINATION = 0.001
     MAX_CONTAMINATION = 0.500
-    # minimum number of expected outlier rows
-    MIN_OUTLIER_ROWS = 2
     # scikit-learn uses 20 neighbours by default
     MIN_NEIGHBORS = 5
     # very small number to use instead of zero
@@ -58,7 +59,10 @@ class lofknob:
         c_grid: Optional[List[float]] = None,
         k_grid: Optional[List[int]] = None,
         return_scores: bool = False,
+        min_outlier_rows: int = 2,
     ) -> Union[Tuple[float, int], List[Candidate], None]:
+
+        self.min_outlier_rows = min_outlier_rows
 
         if c_grid is None:
             c_grid = np.linspace(
@@ -98,9 +102,9 @@ class lofknob:
                 int
             )  # np.floor() returns a float
 
-            if expected_outlier_rows < lofknob.MIN_OUTLIER_ROWS:
+            if expected_outlier_rows < self.min_outlier_rows:
                 print(
-                    f"contamination {c:.5f} results in {expected_outlier_rows:,} outliers (required minimum is {lofknob.MIN_OUTLIER_ROWS})"
+                    f"contamination {c:.5f} results in {expected_outlier_rows:,} outliers (required minimum is {self.min_outlier_rows})"
                 )
                 continue
 
