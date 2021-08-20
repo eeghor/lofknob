@@ -1,7 +1,6 @@
 from typing import List, Tuple, Optional, NamedTuple, Union
 from operator import attrgetter
 import heapq
-
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 from scipy.stats import nct  # type: ignore
@@ -17,7 +16,8 @@ class lofknob:
     usage example
     -------------
 
-    optimal_contamination, optimal_number_of_neighbours = lofknob().tune(X, c_grid, k_grid, return_scores, min_outlier_rows)
+    optimal_contamination, optimal_number_of_neighbours =
+        lofknob().tune(X, c_grid, k_grid, return_scores, min_outlier_rows)
 
     where
 
@@ -103,9 +103,6 @@ class lofknob:
             )  # np.floor() returns a float
 
             if expected_outlier_rows < self.min_outlier_rows:
-                print(
-                    f"contamination {c:.5f} results in {expected_outlier_rows:,} outliers (required minimum is {self.min_outlier_rows})"
-                )
                 continue
 
             out_mean_lls_all_ks = []
@@ -189,7 +186,12 @@ class lofknob:
 
             # now we want to find out which choice of k resulted in
             # the largest distance score (and what that score was)
-            k_opt_this_c, opt_dist_score = max(dist_scores_all_k, key=lambda x: x[1])
+            if dist_scores_all_k:
+                k_opt_this_c, opt_dist_score = max(
+                    dist_scores_all_k, key=lambda x: x[1]
+                )
+            else:
+                continue
 
             # degrees of freedom
             df_this_c = 2 * expected_outlier_rows - 2
@@ -216,5 +218,4 @@ class lofknob:
                     max(candidates, key=lambda x: x.probability_score)
                 )
         else:
-            print("tuning failed, try different grids!")
             return None
