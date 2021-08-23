@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional, NamedTuple, Union
+from typing import List, Tuple, Optional, NamedTuple, Union, Dict
 from operator import attrgetter
 import heapq
 import numpy as np  # type: ignore
@@ -127,7 +127,7 @@ class lofknob:
                 lof = LocalOutlierFactor(contamination=c, n_neighbors=k, novelty=False)
                 labels = lof.fit_predict(X)
 
-                label_counter = Counter(labels)
+                label_counter = Counter(labels)  # type:ignore
 
                 number_of_predicted_outliers = label_counter.get(
                     lofknob.OUTLIER_LABEL, 0
@@ -155,8 +155,6 @@ class lofknob:
                     lof_scores > lofknob.VERY_SMALL, lofknob.VERY_SMALL, lof_scores
                 )
 
-                # print('LO Factors: ', -lof.negative_outlier_factor_)
-                # lls = np.around(np.log(-lof.negative_outlier_factor_), decimals=6)
                 lls = np.log(lof_scores)
 
                 # select natural logarithms of LOF scores for outliers
