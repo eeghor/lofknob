@@ -17,22 +17,25 @@ class lofknob:
     -------------
 
     optimal_contamination, optimal_number_of_neighbours =
-        lofknob().tune(X, c_grid, k_grid, return_scores, min_outlier_rows)
+            lofknob().tune(X, c_grid, k_grid, return_scores, min_outlier_rows, useful_digits)
 
     where
 
     X:
-                    is a pandas DataFrame with training data
+                                    is a pandas DataFrame with training data
     c_grid:
-                    is a list of contamination values to try, e.g. [0.01, 0.02, ..]
+                                    is a list of contamination values to try, e.g. [0.01, 0.02, ..]
     k_grid:
-                    is a list of the number of neighbours to try, e.g. [5, 10, 20, ..]
+                                    is a list of the number of neighbours to try, e.g. [5, 10, 20, ..]
     return_scores:
-                    if True, return a list of parameter pairs competing for being "optimal" along
-                    with their probability scores; default: False
+                                    if True, return a list of parameter pairs competing for being "optimal" along
+                                    with their probability scores; default: False
     min_outlier_rows:
-                    minimum number of expected outlier rows for any selected contamination;
-                    default: 2
+                                    minimum number of expected outlier rows for any selected contamination;
+                                    default: 2
+    useful_digits:
+                                                            how many decimal digits to round to in output;
+                                                            default: 6
     """
 
     # scikit-learn restricts contamination to range (0, 0.5]
@@ -45,8 +48,6 @@ class lofknob:
     # scikit-learn outlier labels
     OUTLIER_LABEL = -1
     INLIER_LABEL = 1
-    # how many decimal digits to round to in output
-    USEFUL_DIGITS = 4
 
     class Candidate(NamedTuple):
         contamination: float
@@ -60,9 +61,11 @@ class lofknob:
         k_grid: Optional[List[int]] = None,
         return_scores: bool = False,
         min_outlier_rows: int = 2,
+        useful_digits: int = 6,
     ) -> Union[Tuple[float, int], List[Candidate], None]:
 
         self.min_outlier_rows = min_outlier_rows
+        self.useful_digits = useful_digits
 
         if c_grid is None:
             c_grid = np.linspace(
@@ -193,18 +196,23 @@ class lofknob:
             else:
                 continue
 
-            # degrees of freedom
-            df_this_c = 2 * expected_outlier_rows - 2
-
-            p_c = nct.cdf(x=opt_dist_score, df=df_this_c, nc=ncp_c, loc=0, scale=1)
-
-            candidates.append(
-                lofknob.Candidate(
-                    contamination=round(c, lofknob.USEFUL_DIGITS),
-                    number_of_neighbours=k_opt_this_c,
-                    probability_score=round(p_c, lofknob.USEFUL_DIGITS),
+            # degrees of freedom: must be positive, otherwise nct.cdf just returns nans
+            if (
+                degrees_of_freedom := 2 * (expected_outlier_rows - 1)
+            ) <= lofknob.VERY_SMALL:
+                return None
+            else:
+                p_c = nct.cdf(
+                    x=opt_dist_score, df=degrees_of_freedom, nc=ncp_c, loc=0, scale=1
                 )
-            )
+
+                candidates.append(
+                    lofknob.Candidate(
+                        contamination=round(c, self.useful_digits),
+                        number_of_neighbours=k_opt_this_c,
+                        probability_score=round(p_c, self.useful_digits),
+                    )
+                )
 
         # now that we've gone through all combinations of c and k,
         # find optimal c - it's the one corresponding to the largest probability_score
