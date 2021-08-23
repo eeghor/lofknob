@@ -18,7 +18,7 @@ class lofknob:
     -------------
 
     optimal_contamination, optimal_number_of_neighbours =
-                    lofknob().tune(X, c_grid, k_grid, return_scores, min_outlier_rows, useful_digits)
+                                    lofknob().tune(X, c_grid, k_grid, return_scores, min_outlier_rows, useful_digits, verbose)
 
     where
 
@@ -37,6 +37,9 @@ class lofknob:
     useful_digits:
        how many decimal digits to round to in output;
        default: 6
+    verbose:
+       if True, show some intermediate output;
+       default: False
     """
 
     # scikit-learn restricts contamination to range (0, 0.5]
@@ -63,6 +66,7 @@ class lofknob:
         return_scores: bool = False,
         min_outlier_rows: int = 2,
         useful_digits: int = 6,
+        verbose: bool = False,
     ) -> Union[Tuple[float, int], List[Candidate], None]:
 
         self.min_outlier_rows = min_outlier_rows
@@ -125,8 +129,11 @@ class lofknob:
 
                 label_counter = Counter(labels)
 
-                number_of_predicted_outliers = label_counter.get(lofknob.OUTLIER_LABEL, 0)
-                print(
+                number_of_predicted_outliers = label_counter.get(
+                    lofknob.OUTLIER_LABEL, 0
+                )
+                if verbose:
+                    print(
                         f"LocalOutlierFactor predicted {number_of_predicted_outliers} outliers: cont. {c}, exp. outliers {expected_outlier_rows}, neighbours: {k}"
                     )
 
@@ -134,16 +141,19 @@ class lofknob:
                     continue
 
                 if not label_counter.get(lofknob.INLIER_LABEL, None):
-                    print(
-                        f"LocalOutlierFactor found no inliers for contamination {c} and {k} neighbours"
-                    )
+                    if verbose:
+                        print(
+                            f"LocalOutlierFactor found no inliers for contamination {c} and {k} neighbours"
+                        )
                     continue
 
                 # negative_outlier_factor_ = -[LOF score]; [LOF score] for
                 # outliers >> 1 and for inliers it's close to 1;
                 # we calculate natural logarithms of LOF scores here
                 lof_scores = -lof.negative_outlier_factor_
-                lof_scores = np.where(lof_scores > lofknob.VERY_SMALL, lofknob.VERY_SMALL, lof_scores)
+                lof_scores = np.where(
+                    lof_scores > lofknob.VERY_SMALL, lofknob.VERY_SMALL, lof_scores
+                )
 
                 # print('LO Factors: ', -lof.negative_outlier_factor_)
                 # lls = np.around(np.log(-lof.negative_outlier_factor_), decimals=6)
@@ -175,16 +185,21 @@ class lofknob:
                 if (
                     diff_means_this_k := out_mean_lls_this_k - in_mean_lls_this_k
                 ) > lofknob.VERY_SMALL:
-                    dist_score_this_k = diff_means_this_k / (np.sqrt((out_var_lls_this_k + in_var_lls_this_k) / expected_outlier_rows) + lofknob.VERY_SMALL)
+                    dist_score_this_k = diff_means_this_k / (
+                        np.sqrt(
+                            (out_var_lls_this_k + in_var_lls_this_k)
+                            / expected_outlier_rows
+                        )
+                        + lofknob.VERY_SMALL
+                    )
                 else:
                     dist_score_this_k = 0
 
                 dist_scores_all_k.append((k, dist_score_this_k))
 
             if not out_mean_lls_all_ks:
-                print(
-                    f"no outliers found for contamination {c}"
-                )
+                if verbose:
+                    print(f"no outliers found for contamination {c}")
                 continue
 
             if (
@@ -221,9 +236,7 @@ class lofknob:
             ) <= lofknob.VERY_SMALL:
                 return None
             else:
-                p_c = nct.cdf(
-                    x=opt_dist_score, df=degrees_of_freedom, nc=ncp_c
-                )
+                p_c = nct.cdf(x=opt_dist_score, df=degrees_of_freedom, nc=ncp_c)
 
                 candidates.append(
                     lofknob.Candidate(
@@ -238,7 +251,9 @@ class lofknob:
         if candidates:
             if return_scores:
                 return sorted(
-                    sorted(candidates, key=lambda x: x.contamination), key=lambda x: x.probability_score, reverse=True
+                    sorted(candidates, key=lambda x: x.contamination),
+                    key=lambda x: x.probability_score,
+                    reverse=True,
                 )
             else:
                 return attrgetter("contamination", "number_of_neighbours")(  # type: ignore

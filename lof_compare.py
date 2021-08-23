@@ -17,7 +17,7 @@ else:
     print("optimisation failed")
 
 print(f"total data points: {len(X.index)}")
-print(f"contamination: {_counter[-5]} samples, {_counter[-5]/len(X.index):.4f}")
+print(f"real contamination: {_counter[-5]/len(X.index):.4f}, {_counter[-5]} samples")
 print()
 
 # https://github.com/scikit-learn/scikit-learn/blob/114616d9f6ce9eba7c1aacd3d4a254f868010e25/examples/neighbors/plot_lof_outlier_detection.py
@@ -42,7 +42,7 @@ if res := lofknob().tune(X, c_grid, k_grid):
 else:
     print("optimisation failed")
 
-print(f"outliers: {n_outliers}, contamination: {n_outliers/len(X_inliers):.4f}")
+print(f"real contamination: {n_outliers/len(X_inliers):.4f}, outliers: {n_outliers}")
 
 # fit the model for outlier detection (default)
 # clf = LocalOutlierFactor(n_neighbors=20, contamination=0.1)
