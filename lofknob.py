@@ -18,7 +18,7 @@ class lofknob:
     -------------
 
     optimal_contamination, optimal_number_of_neighbours =
-                                    lofknob().tune(X, c_grid, k_grid, return_scores, min_outlier_rows, useful_digits, verbose)
+                                                                    lofknob().tune(X, c_grid, k_grid, return_scores, min_outlier_rows, useful_digits, verbose)
 
     where
 
@@ -134,7 +134,7 @@ class lofknob:
                 )
                 if verbose:
                     print(
-                        f"LocalOutlierFactor predicted {number_of_predicted_outliers} outliers: cont. {c}, exp. outliers {expected_outlier_rows}, neighbours: {k}"
+                        f"LocalOutlierFactor predicted {number_of_predicted_outliers} outliers: cont. {c:.4f}, exp. outliers {expected_outlier_rows}, neighbours: {k}"
                     )
 
                 if not number_of_predicted_outliers:
@@ -143,7 +143,7 @@ class lofknob:
                 if not label_counter.get(lofknob.INLIER_LABEL, None):
                     if verbose:
                         print(
-                            f"LocalOutlierFactor found no inliers for contamination {c} and {k} neighbours"
+                            f"LocalOutlierFactor found no inliers for contamination {c:.4f} and {k} neighbours"
                         )
                     continue
 
@@ -152,7 +152,7 @@ class lofknob:
                 # we calculate natural logarithms of LOF scores here
                 lof_scores = -lof.negative_outlier_factor_
                 lof_scores = np.where(
-                    lof_scores > lofknob.VERY_SMALL, lofknob.VERY_SMALL, lof_scores
+                    lof_scores < lofknob.VERY_SMALL, lofknob.VERY_SMALL, lof_scores
                 )
 
                 lls = np.log(lof_scores)
@@ -183,13 +183,14 @@ class lofknob:
                 if (
                     diff_means_this_k := out_mean_lls_this_k - in_mean_lls_this_k
                 ) > lofknob.VERY_SMALL:
-                    dist_score_this_k = diff_means_this_k / (
-                        np.sqrt(
-                            (out_var_lls_this_k + in_var_lls_this_k)
-                            / expected_outlier_rows
-                        )
-                        + lofknob.VERY_SMALL
+
+                    sum_vars_this_k = (
+                        out_var_lls_this_k + in_var_lls_this_k + lofknob.VERY_SMALL
                     )
+                    dist_score_this_k = diff_means_this_k / np.sqrt(
+                        sum_vars_this_k / expected_outlier_rows
+                    )
+
                 else:
                     dist_score_this_k = 0
 
@@ -204,16 +205,15 @@ class lofknob:
                 diff_mean_means_over_ks := np.mean(out_mean_lls_all_ks)
                 - np.mean(in_mean_lls_all_ks)
             ) > lofknob.VERY_SMALL:
-                ncp_c = diff_mean_means_over_ks
 
-                if (
-                    sum_mean_vars_over_ks := np.mean(out_var_lls_all_ks)
+                sum_var_means = (
+                    np.mean(out_var_lls_all_ks)
                     + np.mean(in_var_lls_all_ks)
-                ) > lofknob.VERY_SMALL:
-
-                    ncp_c = ncp_c / np.sqrt(
-                        sum_mean_vars_over_ks / expected_outlier_rows
-                    )
+                    + lofknob.VERY_SMALL
+                )
+                ncp_c = diff_mean_means_over_ks / np.sqrt(
+                    sum_var_means / expected_outlier_rows
+                )
 
             else:
                 ncp_c = 0
@@ -234,6 +234,7 @@ class lofknob:
             ) <= lofknob.VERY_SMALL:
                 return None
             else:
+
                 p_c = nct.cdf(x=opt_dist_score, df=degrees_of_freedom, nc=ncp_c)
 
                 candidates.append(
