@@ -2,7 +2,6 @@ from typing import List, Tuple, Optional, NamedTuple, Union
 from operator import attrgetter
 import heapq
 import numpy as np  # type: ignore
-import pandas as pd  # type: ignore
 from scipy.stats import nct  # type: ignore
 from sklearn.neighbors import LocalOutlierFactor  # type: ignore
 from collections import Counter
@@ -18,7 +17,7 @@ class lofknob:
 	-------------
 
 	optimal_contamination, optimal_number_of_neighbours =
-					lofknob().tune(X, c_grid, k_grid, return_scores, min_outlier_rows, useful_digits, verbose)
+					lofknob().tune(X, c_grid, k_grid, return_scores, min_outlier_rows, useful_digits, verbose) 
 
 	where
 

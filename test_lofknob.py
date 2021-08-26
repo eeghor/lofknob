@@ -1,12 +1,10 @@
 import unittest
 from lofknob import lofknob
-import pandas as pd
-from collections import Counter
 import numpy as np
-from scipy.stats import norm, uniform
+from scipy.stats import uniform
 
 
-class ObviousOutliers(unittest.TestCase):
+class FindObviousOutliers(unittest.TestCase):
 
     def test_one(self):
 
