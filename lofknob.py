@@ -117,7 +117,8 @@ class lofknob:
 				print(
 					f"expecting {expected_outlier_rows} outliers but need {min_outlier_rows} or more"
 				)
-				print("moving on to next contamination...")
+				if c != c_grid[-1]:
+					print("moving on to next contamination...")
 				continue
 
 			out_mean_lls_all_ks = []
@@ -166,7 +167,8 @@ class lofknob:
 						print(
 							f"not enough outliers to proceed (need at least {min_outlier_rows})"
 						)
-						print("moving on to next neighbours...")
+						if k != k_grid[-1]:
+							print("moving on to next neighbours...")
 					continue
 
 				if not label_counter.get(lofknob.INLIER_LABEL, None):
@@ -174,7 +176,8 @@ class lofknob:
 						print(
 							f"LocalOutlierFactor found no inliers (!) for contamination {c:.4f} and {k} neighbours"
 						)
-						print("moving on to next neighbours...")
+						if k != k_grid[-1]:
+							print("moving on to next neighbours...")
 					continue
 
 				lof_scores = np.where(lof_scores > 1e3, 1e3, lof_scores)
@@ -223,7 +226,8 @@ class lofknob:
 			if not out_mean_lls_all_ks:
 				if verbose:
 					print(f"no outliers found for contamination {c}")
-					print("moving on to next contamination...")
+					if c != c_grid[-1]:
+						print("moving on to next contamination...")
 				continue
 
 			if (
