@@ -98,7 +98,6 @@ class lofknob:
 			)
 
 		n_rows = len(X)
-		print(Counter(X.flatten()))
 
 		candidates = []
 		_case_counter = 0
@@ -138,7 +137,7 @@ class lofknob:
 					)
 
 				# fit LOF with c and k, return -1 if outlier and 1 otherwise
-				lof = LocalOutlierFactor(contamination=c, n_neighbors=k, novelty=False, algorithm='brute')
+				lof = LocalOutlierFactor(contamination=c, n_neighbors=k, novelty=False)
 
 				labels = lof.fit_predict(X)
 
