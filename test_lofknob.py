@@ -6,7 +6,7 @@ from scipy.stats import uniform
 
 class FindObviousOutliers(unittest.TestCase):
 
-    def test_one(self):
+    def test_one(self) -> None:
 
         # total samples to generate
         SAMPLES = 50
@@ -16,7 +16,7 @@ class FindObviousOutliers(unittest.TestCase):
         _actual_contamination = OUTLIERS/SAMPLES
         
         # data
-        X = np.hstack((np.ones(SAMPLES - OUTLIERS), -np.ones(OUTLIERS) + np.random.normal(0,1e-6, OUTLIERS))).reshape(-1, 1) 
+        X = np.hstack((np.ones(SAMPLES - OUTLIERS), -np.ones(OUTLIERS) + np.random.normal(0, 1e-6, OUTLIERS))).reshape(-1, 1) 
 
         c_grid = [0.01, 0.02, 0.05, 0.06, 0.07, 0.10, 0.12, 0.15, 0.20, 0.25]
         k_grid = [5, 8, 10, 15, 20, 25, 30]
@@ -35,7 +35,7 @@ class FindObviousOutliers(unittest.TestCase):
 
             self.assertAlmostEqual(c_opt, _actual_contamination, places=2)
 
-    def test_two(self):
+    def test_two(self) -> None:
 
         SAMPLES = 500
         OUTLIERS = 25
