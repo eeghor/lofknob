@@ -71,7 +71,7 @@ class lofknob:
     ) -> Union[Tuple[float, int], List[Candidate], None]:
 
         if min_outlier_rows < 2:
-            print(f"sorry, tuning needs min_outlier_rows be at least 2..")
+            print("sorry, tuning needs min_outlier_rows be at least 2..")
             return None
 
         if c_grid is None:
