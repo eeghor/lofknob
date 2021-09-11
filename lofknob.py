@@ -17,7 +17,7 @@ class lofknob:
     -------------
 
     optimal_contamination, optimal_number_of_neighbours =
-                    lofknob().tune(X, c_grid, k_grid, return_scores, min_outlier_rows, useful_digits, verbose) 
+                    lofknob().tune(X, c_grid, k_grid, return_scores, min_outlier_rows, useful_digits, verbose)
 
     where
 
@@ -58,6 +58,33 @@ class lofknob:
         contamination: float
         number_of_neighbours: float
         probability_score: float
+
+    def assign_outlier_labels(negative_outlier_factor_, c_req):
+
+        """
+        Parameters
+        ----------
+        negative_outlier_factor_ : array of negative LOF scores
+        c_req : required contamination
+
+        Returns
+        -------
+        array of outlier and inlier labels or None
+        """
+
+        OUTLIER_LABEL = -1
+        INLIER_LABEL = 1
+
+        med = np.median(negative_outlier_factor_)
+
+        # try percentiles from the one corresp. to c_req and less
+        # until we can be sure that what we're labelling are indeed outliers
+        for perc_ in range(int(np.floor(100 * c_req)), 0, -1):
+            # if calculated percentile is strinctly less than median, ok to assign labels
+            if (p_ := np.percentile(negative_outlier_factor_, perc_)) < med:
+                return np.where(
+                    negative_outlier_factor_ <= p_, OUTLIER_LABEL, INLIER_LABEL
+                )
 
     def tune(
         self,
@@ -181,7 +208,9 @@ class lofknob:
                             print("moving on to next neighbours...")
                     continue
 
-                lof_scores = np.where(lof_scores > lofknob.MAX_LOF, lofknob.MAX_LOF, lof_scores)
+                lof_scores = np.where(
+                    lof_scores > lofknob.MAX_LOF, lofknob.MAX_LOF, lof_scores
+                )
 
                 lls = np.log(lof_scores)
 
@@ -276,10 +305,11 @@ class lofknob:
         if candidates:
 
             candidates_ranked_by_score = sorted(
-                    sorted(candidates, key=lambda _: _.contamination),
-                    key=lambda _: _.probability_score,
-                    reverse=True)
-            
+                sorted(candidates, key=lambda _: _.contamination),
+                key=lambda _: _.probability_score,
+                reverse=True,
+            )
+
             if verbose:
                 print("----------")
                 print("candidates")
