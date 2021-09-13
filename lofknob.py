@@ -59,7 +59,9 @@ class lofknob:
         number_of_neighbours: float
         probability_score: float
 
-    def assign_outlier_labels(negative_outlier_factor_: np.ndarray, c_req: float) -> Optional[np.ndarray]:
+    def assign_outlier_labels(
+        negative_outlier_factor_: np.ndarray, c_req: float
+    ) -> Optional[np.ndarray]:
 
         """
         Parameters
@@ -72,9 +74,6 @@ class lofknob:
         array of outlier and inlier labels or None
         """
 
-        OUTLIER_LABEL = -1
-        INLIER_LABEL = 1
-
         med = np.median(negative_outlier_factor_)
 
         # try percentiles from the one corresp. to c_req and less
@@ -83,8 +82,12 @@ class lofknob:
             # if calculated percentile is strinctly less than median, ok to assign labels
             if (p_ := np.percentile(negative_outlier_factor_, perc_)) < med:
                 return np.where(
-                    negative_outlier_factor_ <= p_, OUTLIER_LABEL, INLIER_LABEL
+                    negative_outlier_factor_ <= p_,
+                    lofknob.OUTLIER_LABEL,
+                    lofknob.INLIER_LABEL,
                 )
+
+        return None
 
     def tune(
         self,
