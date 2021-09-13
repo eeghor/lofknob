@@ -59,7 +59,7 @@ class lofknob:
         number_of_neighbours: float
         probability_score: float
 
-    def assign_outlier_labels(negative_outlier_factor_, c_req):
+    def assign_outlier_labels(negative_outlier_factor_: np.ndarray, c_req: float) -> Optional[np.ndarray]:
 
         """
         Parameters
