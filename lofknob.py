@@ -60,7 +60,7 @@ class lofknob:
         probability_score: float
 
     def assign_outlier_labels(
-        negative_outlier_factor_: np.ndarray, c_req: float
+        self, negative_outlier_factor_: np.ndarray, c_req: float
     ) -> Optional[np.ndarray]:
 
         """
