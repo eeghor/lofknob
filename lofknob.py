@@ -136,9 +136,9 @@ class lofknob:
 
         for c in c_grid:
 
-            # with contamination c, number_of_predicted_outliers=floor(c*n_rows)
+            # with contamination c, expected_outlier_rows=floor(c*n_rows)
             # e.g. if n_rows=98 and c=0.12 then
-            # number_of_predicted_outliers=floor(c*n_rows=0.12*98=11.76)=11
+            # expected_outlier_rows=floor(c*n_rows=0.12*98=11.76)=11
 
             expected_outlier_rows = np.floor(c * n_rows).astype(
                 int
@@ -184,6 +184,7 @@ class lofknob:
                         f"LOF scores range from {min(lof_scores)} to {max(lof_scores)}"
                     )
 
+                # total outliers under current parameter combination
                 number_of_predicted_outliers = label_counter.get(
                     lofknob.OUTLIER_LABEL, 0
                 )
@@ -193,6 +194,10 @@ class lofknob:
                         f"LocalOutlierFactor found {number_of_predicted_outliers} outliers (expected {expected_outlier_rows}); samples in fitted data: {lof.n_samples_fit_}, actually used neighbours: {lof.n_neighbors_}"
                     )
 
+                # number_of_predicted_outliers is expected to be
+                # same as expected_outlier_rows if LOF does its job well.
+                # however (long story, LOF has labelling issues) we
+                # don't hold our breath..
                 if number_of_predicted_outliers < min_outlier_rows:
                     if verbose:
                         print(
@@ -274,7 +279,7 @@ class lofknob:
                     + lofknob.VERY_SMALL
                 )
                 ncp_c = diff_mean_means_over_ks / np.sqrt(
-                    sum_var_means / number_of_predicted_outliers
+                    sum_var_means / expected_outlier_rows
                 )
 
             else:
@@ -291,7 +296,7 @@ class lofknob:
                 continue
 
             # degrees of freedom: must be positive, otherwise nct.cdf just returns nans
-            degrees_of_freedom = 2 * (number_of_predicted_outliers - 1)
+            degrees_of_freedom = 2 * (expected_outlier_rows - 1)
 
             p_c = nct.cdf(x=opt_dist_score, df=degrees_of_freedom, nc=ncp_c)
 
